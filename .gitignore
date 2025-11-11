@@ -1,0 +1,29 @@
+# Build artifacts
+target/
+Cargo.lock
+
+# Database files
+*.db
+projects/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test files (holographic-thinking-mcp related)
+**/test-*.mjs
+**/*test*.mjs
+**/devprobe.mjs
+
