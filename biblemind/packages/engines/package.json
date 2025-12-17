@@ -1,0 +1,22 @@
+{
+  "name": "@biblemind/engines",
+  "version": "0.1.0",
+  "description": "Biblical Holographic Reasoning Engines - 10 parallel engines for multi-perspective theological analysis",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src/**/*.ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "openai": "^4.20.1",
+    "@pinecone-database/pinecone": "^1.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}
