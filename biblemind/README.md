@@ -81,7 +81,7 @@ biblemind/
 ├── packages/
 │   ├── shared/          # Shared types and utilities
 │   ├── engines/         # 10 holographic reasoning engines
-│   └── knowledge-graph/ # Biblical knowledge graph (Pinecone)
+│   └── knowledge-graph/ # Biblical knowledge graph (Qdrant)
 ├── docs/                # Documentation
 ├── holographic-thinking-chatgpt/  # Original engine specifications
 ├── package.json         # Monorepo configuration
@@ -98,7 +98,7 @@ biblemind/
 - npm 9+
 - Firebase account
 - OpenAI API key
-- Pinecone account (for knowledge graph)
+- Qdrant (self-hosted via Docker or Qdrant Cloud for knowledge graph)
 
 ### Installation
 
@@ -312,7 +312,7 @@ Yes, and here's how:
 - **API**: Express.js
 - **Auth**: Firebase Authentication
 - **Database**: Firestore
-- **Vector DB**: Pinecone (knowledge graph)
+- **Vector DB**: Qdrant (open-source, self-hosted or cloud)
 
 ### AI Layer
 - **LLM**: OpenAI GPT-4 Turbo
