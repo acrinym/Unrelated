@@ -20,6 +20,13 @@ export { ScriptureMemory } from './engines/engine7-memory';
 export { DiscipleshipTracking } from './engines/engine8-discipleship';
 export { HeartConditionAnalysis } from './engines/engine9-heart-condition';
 
+// Export orchestrator (main entry point)
+export {
+  HolographicReasoningOrchestrator,
+  analyzeBiblicalQuestion,
+  type OrchestratorConfig
+} from './orchestrator';
+
 /**
  * Engine Status - ALL ENGINES IMPLEMENTED ✓
  */

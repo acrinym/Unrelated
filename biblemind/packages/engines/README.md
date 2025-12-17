@@ -57,7 +57,80 @@ Some engines have different public-facing labels for clarity and accessibility:
 
 See `src/branding.ts` for the complete branding configuration.
 
-## Usage
+## Quick Start: Orchestrator (Recommended)
+
+The **Holographic Reasoning Orchestrator** coordinates all 10 engines automatically:
+
+```typescript
+import { analyzeBiblicalQuestion } from '@biblemind/engines';
+
+// Simple one-line usage
+const result = await analyzeBiblicalQuestion(
+  "How do I forgive someone who hurt me deeply?",
+  "user123",
+  {
+    openaiApiKey: process.env.OPENAI_API_KEY
+  }
+);
+
+console.log(result.synthesis); // Final biblical guidance
+console.log(result.confidence); // Confidence level (0-100)
+console.log(result.scriptures); // All scripture citations
+```
+
+### With User Context
+
+```typescript
+import { analyzeBiblicalQuestion } from '@biblemind/engines';
+
+const userContext = {
+  userId: 'user456',
+  denomination: 'protestant',
+  theologicalLean: 'reformed',
+  preferences: {
+    showHebrewGreek: true,
+    enableCrossReferences: true,
+    preferredTranslation: 'ESV'
+  },
+  history: {
+    recentQuestions: ['Previous question 1', 'Previous question 2'],
+    savedPassages: []
+  }
+};
+
+const result = await analyzeBiblicalQuestion(
+  "Your question here",
+  "user456",
+  { openaiApiKey: process.env.OPENAI_API_KEY },
+  userContext
+);
+
+// Access individual engine outputs
+console.log('Heart Condition:', result.reasoning.engine9.primaryEmotion);
+console.log('Distress Factors:', result.reasoning.engine4.distressFactors.length);
+console.log('Oracle Perspectives:', result.reasoning.engine1.length);
+```
+
+### Reusable Orchestrator
+
+```typescript
+import { HolographicReasoningOrchestrator } from '@biblemind/engines';
+
+// Create once, reuse for multiple questions
+const orchestrator = new HolographicReasoningOrchestrator({
+  openaiApiKey: process.env.OPENAI_API_KEY,
+  knowledgeGraph: myKnowledgeGraphInstance // Optional
+});
+
+const result1 = await orchestrator.processQuestion("Question 1", "user123");
+const result2 = await orchestrator.processQuestion("Question 2", "user123");
+```
+
+See `examples/basic-usage.ts` for complete examples.
+
+## Advanced Usage: Individual Engines
+
+You can also use engines individually if you don't need the full orchestrator:
 
 ```typescript
 import {
