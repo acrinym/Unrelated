@@ -31,27 +31,20 @@ PARALLEL PHASE 2
 [8] Discipleship Tracking → Learn over time
 ```
 
-## Engines
-
-### Implemented ✅
+## All 10 Engines - COMPLETE ✅
 
 | Engine | File | Public Label | Purpose |
 |--------|------|--------------|---------|
 | **0** | `engine0-wisdom-filter.ts` | Biblical Wisdom Filter | Safety check and theological soundness |
 | **1** | `engine1-biblical-oracle.ts` | Multi-Perspective Analysis | 7 theological perspectives |
+| **2** | `engine2-covenant.ts` | Covenant Analysis | How biblical covenants apply |
+| **3** | `engine3-tribunal.ts` | Theological Council | Weighs perspectives from different traditions |
 | **4** | `engine4-pastoral-risk.ts` | Pastoral Risk & Distress Analysis | Identify distress, provide comfort |
+| **5** | `engine5-cross-testament.ts` | Cross-Testament Integration | Connects OT and NT wisdom |
 | **6** | `engine6-synthesis.ts` | Integrated Discernment Synthesis | Synthesize all perspectives |
+| **7** | `engine7-memory.ts` | Scripture Memory & Context | Recalls your history and patterns |
+| **8** | `engine8-discipleship.ts` | Discipleship Growth Tracking | Tracks spiritual growth over time |
 | **9** | `engine9-heart-condition.ts` | Heart Condition Analysis | Understand emotional/spiritual state |
-
-### Pending 🚧
-
-| Engine | Public Label | Purpose |
-|--------|--------------|---------|
-| **2** | Covenant Analysis | How biblical covenants apply |
-| **3** | Theological Council | Weighs perspectives from different traditions |
-| **5** | Cross-Testament Integration | Connects OT and NT wisdom |
-| **7** | Scripture Memory & Context | Recalls your history and patterns |
-| **8** | Discipleship Growth Tracking | Tracks spiritual growth over time |
 
 ## Branding: Public vs Internal Names
 
