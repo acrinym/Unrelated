@@ -129,7 +129,7 @@ biblemind/
 **What exists:**
 - Interface definition in orchestrator
 - README with implementation guide
-- Placeholder for Pinecone integration
+- Placeholder for Qdrant integration
 
 **What's needed:**
 1. Ingest Bible texts (multiple translations)
@@ -139,10 +139,11 @@ biblemind/
 5. Create Hebrew/Greek word study database
 
 **Technology:**
-- Pinecone vector database
+- Qdrant vector database (open-source, self-hosted or cloud)
 - OpenAI embeddings (text-embedding-3-large)
 - Scripture references indexed by book/chapter/verse
 - Thematic tagging system
+- **Cost advantage:** Free self-hosted, or 10x cheaper than Pinecone at scale
 
 **User action required:** Populate with biblical content
 
@@ -407,16 +408,16 @@ npx tsx examples/basic-usage.ts
 - OpenAI API: ~$100-500 (testing)
 - Firebase: Free tier (< 50K reads/day)
 - Vercel: Free tier
-- Pinecone: $70 (starter)
-- **Total: ~$170-570/month**
+- Qdrant: **$0** (self-hosted Docker) or **Free** (Cloud free tier)
+- **Total: ~$100-500/month** ✅ **Saves $70/month vs Pinecone**
 
 ### Production (1,000 users)
 - OpenAI API: ~$2,000-5,000
 - Firebase: ~$200-500
 - Vercel: $20 (Pro)
-- Pinecone: $70-700 (depending on scale)
+- Qdrant: **$10-25/month** (self-hosted VPS or Cloud)
 - Monitoring: $50
-- **Total: ~$2,340-6,270/month**
+- **Total: ~$2,280-5,595/month** ✅ **Saves $60-675/month vs Pinecone**
 
 ### Revenue Potential (1,000 users)
 - 100 premium users @ $12/month = $1,200
