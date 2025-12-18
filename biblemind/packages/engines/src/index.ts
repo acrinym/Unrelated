@@ -26,6 +26,8 @@ export {
   analyzeBiblicalQuestion,
   type OrchestratorConfig
 } from './orchestrator';
+export { GeminiFlashClient } from './llm/gemini-flash-client';
+export type { LanguageModel } from './llm/types';
 
 /**
  * Engine Status - ALL ENGINES IMPLEMENTED ✓

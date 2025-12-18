@@ -24,7 +24,7 @@ async function example1_SimpleUsage() {
     "How do I forgive someone who hurt me deeply?",
     "user123",
     {
-      openaiApiKey: process.env.OPENAI_API_KEY!
+      geminiApiKey: process.env.GEMINI_API_KEY!
     }
   );
 
@@ -64,7 +64,7 @@ async function example2_WithUserContext() {
     "I'm struggling with fear about the future",
     "user456",
     {
-      openaiApiKey: process.env.OPENAI_API_KEY!
+      geminiApiKey: process.env.GEMINI_API_KEY!
     },
     userContext
   );
@@ -92,7 +92,7 @@ async function example3_ReusableOrchestrator() {
 
   // Create orchestrator once, reuse for multiple questions
   const orchestrator = new HolographicReasoningOrchestrator({
-    openaiApiKey: process.env.OPENAI_API_KEY!
+    geminiApiKey: process.env.GEMINI_API_KEY!
   });
 
   const questions = [
@@ -126,7 +126,7 @@ async function example4_EngineDrilldown() {
     "Can a Christian lose their salvation?",
     "user000",
     {
-      openaiApiKey: process.env.OPENAI_API_KEY!
+      geminiApiKey: process.env.GEMINI_API_KEY!
     }
   );
 
@@ -212,7 +212,7 @@ async function example5_ErrorHandling() {
       "Your question here",
       "user999",
       {
-        openaiApiKey: process.env.OPENAI_API_KEY!
+        geminiApiKey: process.env.GEMINI_API_KEY!
       }
     );
 
@@ -246,7 +246,7 @@ async function example6_ConfigValidation() {
   console.log('\n=== EXAMPLE 6: Config Validation ===\n');
 
   const config: OrchestratorConfig = {
-    openaiApiKey: process.env.OPENAI_API_KEY || '',
+    geminiApiKey: process.env.GEMINI_API_KEY || '',
     depth: 3,
     enabledEngines: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
   };
@@ -279,11 +279,11 @@ async function example6_ConfigValidation() {
 
 async function main() {
   // Check for API key
-  if (!process.env.OPENAI_API_KEY) {
-    console.error('ERROR: OPENAI_API_KEY environment variable not set');
-    console.error('Set it with: export OPENAI_API_KEY=your-key-here');
-    process.exit(1);
-  }
+if (!process.env.GEMINI_API_KEY) {
+  console.error('ERROR: GEMINI_API_KEY environment variable not set');
+  console.error('Set it with: export GEMINI_API_KEY=your-key-here');
+  process.exit(1);
+}
 
   console.log('BibleMind Holographic Reasoning Engine - Examples\n');
   console.log('='.repeat(60));

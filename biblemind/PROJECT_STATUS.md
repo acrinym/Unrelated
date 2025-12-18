@@ -387,7 +387,7 @@ npx tsx examples/basic-usage.ts
 ## 📦 Dependencies
 
 ### Core Dependencies
-- `openai` - GPT-4 Turbo for reasoning
+- `@google/generative-ai` - Gemini 2.0 Flash for reasoning
 - `firebase-admin` - Backend authentication & database
 - `express` - API server
 - `typescript` - Type safety throughout
@@ -405,14 +405,14 @@ npx tsx examples/basic-usage.ts
 ## 💰 Cost Estimates (Monthly)
 
 ### Development Phase
-- OpenAI API: ~$100-500 (testing)
+- Gemini API: comparable low cost for testing
 - Firebase: Free tier (< 50K reads/day)
 - Vercel: Free tier
 - Qdrant: **$0** (self-hosted Docker) or **Free** (Cloud free tier)
 - **Total: ~$100-500/month** ✅ **Saves $70/month vs Pinecone**
 
 ### Production (1,000 users)
-- OpenAI API: ~$2,000-5,000
+- Gemini API: based on usage; budget similar range depending on volume
 - Firebase: ~$200-500
 - Vercel: $20 (Pro)
 - Qdrant: **$10-25/month** (self-hosted VPS or Cloud)
