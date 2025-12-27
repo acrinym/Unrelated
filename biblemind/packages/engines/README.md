@@ -69,7 +69,7 @@ const result = await analyzeBiblicalQuestion(
   "How do I forgive someone who hurt me deeply?",
   "user123",
   {
-    openaiApiKey: process.env.OPENAI_API_KEY
+    geminiApiKey: process.env.GEMINI_API_KEY!
   }
 );
 
@@ -101,7 +101,7 @@ const userContext = {
 const result = await analyzeBiblicalQuestion(
   "Your question here",
   "user456",
-  { openaiApiKey: process.env.OPENAI_API_KEY },
+  { geminiApiKey: process.env.GEMINI_API_KEY! },
   userContext
 );
 
@@ -118,7 +118,7 @@ import { HolographicReasoningOrchestrator } from '@biblemind/engines';
 
 // Create once, reuse for multiple questions
 const orchestrator = new HolographicReasoningOrchestrator({
-  openaiApiKey: process.env.OPENAI_API_KEY,
+  geminiApiKey: process.env.GEMINI_API_KEY!,
   knowledgeGraph: myKnowledgeGraphInstance // Optional
 });
 
@@ -139,14 +139,14 @@ import {
   PastoralRiskEngine,
   IntegratedDiscernmentSynthesis,
   HeartConditionAnalysis
+  GeminiFlashClient
 } from '@biblemind/engines';
-import { OpenAI } from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const llm = new GeminiFlashClient(process.env.GEMINI_API_KEY!);
 const knowledgeGraph = new KnowledgeGraph(); // Your Pinecone integration
 
 // Engine 0: Safety check
-const wisdomFilter = new BiblicalWisdomFilter(openai);
+const wisdomFilter = new BiblicalWisdomFilter(llm);
 const wisdomResult = await wisdomFilter.evaluate(question);
 
 if (wisdomResult.status === 'VETO') {
@@ -155,19 +155,19 @@ if (wisdomResult.status === 'VETO') {
 }
 
 // Engine 9: Understand heart condition
-const heartAnalysis = new HeartConditionAnalysis(openai);
+const heartAnalysis = new HeartConditionAnalysis(llm);
 const affectContext = await heartAnalysis.analyze(question, userContext);
 
 // Engine 1: Multi-perspective analysis
-const oracle = new BiblicalOracle(openai, knowledgeGraph);
+const oracle = new BiblicalOracle(llm, knowledgeGraph);
 const perspectives = await oracle.explore(question, affectContext);
 
 // Engine 4: Pastoral risk check
-const pastoralRisk = new PastoralRiskEngine(openai);
+const pastoralRisk = new PastoralRiskEngine(llm);
 const riskAnalysis = await pastoralRisk.analyze(question, affectContext);
 
 // Engine 6: Synthesize everything
-const synthesis = new IntegratedDiscernmentSynthesis(openai);
+const synthesis = new IntegratedDiscernmentSynthesis(llm);
 const finalAnswer = await synthesis.synthesize({
   wisdom: wisdomResult,
   oracle: perspectives,

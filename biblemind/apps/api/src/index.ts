@@ -14,7 +14,7 @@
  * Stack:
  * - Express.js
  * - Firebase Admin SDK
- * - OpenAI GPT-4
+ * - Gemini 2.0 Flash
  * - TypeScript
  */
 
@@ -25,7 +25,14 @@ import rateLimit from 'express-rate-limit';
 import admin from 'firebase-admin';
 import dotenv from 'dotenv';
 import { HolographicReasoningOrchestrator } from '@biblemind/engines';
-import { z } from 'zod';
+import {
+  AskQuestionSchema,
+  buildUserContext,
+  DEFAULT_USER_PREFERENCES,
+  mergePreferences,
+  PaginationSchema,
+  UpdateProfileSchema
+} from '@biblemind/shared';
 
 // Load environment variables
 dotenv.config();
@@ -137,35 +144,18 @@ let orchestrator: HolographicReasoningOrchestrator | null = null;
 
 function getOrchestrator(): HolographicReasoningOrchestrator {
   if (!orchestrator) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is required');
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY environment variable is required');
     }
 
     orchestrator = new HolographicReasoningOrchestrator({
-      openaiApiKey: process.env.OPENAI_API_KEY
+      geminiApiKey: process.env.GEMINI_API_KEY
       // knowledgeGraph will be added when user populates it
     });
   }
 
   return orchestrator;
 }
-
-// ============================================================================
-// VALIDATION SCHEMAS
-// ============================================================================
-
-const AskQuestionSchema = z.object({
-  question: z.string().min(10).max(1000),
-  userContext: z.object({
-    denomination: z.string().optional(),
-    theologicalLean: z.string().optional(),
-    preferences: z.object({
-      showHebrewGreek: z.boolean().optional(),
-      enableCrossReferences: z.boolean().optional(),
-      preferredTranslation: z.string().optional()
-    }).optional()
-  }).optional()
-});
 
 // ============================================================================
 // API ROUTES
@@ -246,20 +236,12 @@ app.post(
       const userData = userDoc.data();
 
       // Build full user context
-      const fullUserContext = {
+      const fullUserContext = buildUserContext({
         userId: authReq.user!.uid,
-        denomination: userContext?.denomination || userData?.denomination,
-        theologicalLean: userContext?.theologicalLean || userData?.theologicalLean,
-        preferences: {
-          showHebrewGreek: userContext?.preferences?.showHebrewGreek ?? userData?.preferences?.showHebrewGreek ?? true,
-          enableCrossReferences: userContext?.preferences?.enableCrossReferences ?? userData?.preferences?.enableCrossReferences ?? true,
-          preferredTranslation: userContext?.preferences?.preferredTranslation || userData?.preferences?.preferredTranslation || 'ESV'
-        },
-        history: {
-          recentQuestions,
-          savedPassages: userData?.savedPassages || []
-        }
-      };
+        requestContext: userContext,
+        storedProfile: userData,
+        recentQuestions
+      });
 
       // Process question through orchestrator
       console.log(`[API] Processing question for user ${authReq.user!.uid}`);
@@ -308,8 +290,20 @@ app.get(
   async (req: Request, res: Response) => {
     try {
       const authReq = req as AuthenticatedRequest;
-      const limit = parseInt(req.query.limit as string) || 20;
-      const offset = parseInt(req.query.offset as string) || 0;
+      const pagination = PaginationSchema.safeParse({
+        limit: req.query.limit,
+        offset: req.query.offset
+      });
+      if (!pagination.success) {
+        res.status(400).json({
+          error: 'Invalid pagination parameters',
+          details: pagination.error.flatten()
+        });
+        return;
+      }
+
+      const limit = pagination.data.limit ?? 20;
+      const offset = pagination.data.offset ?? 0;
 
       const snapshot = await db
         .collection('users')
@@ -416,6 +410,10 @@ app.get(
       }
 
       const userData = userDoc.data();
+      const preferences = mergePreferences(
+        userData?.preferences,
+        DEFAULT_USER_PREFERENCES
+      );
 
       res.json({
         success: true,
@@ -425,7 +423,8 @@ app.get(
           isPremium: authReq.user!.isPremium,
           denomination: userData?.denomination,
           theologicalLean: userData?.theologicalLean,
-          preferences: userData?.preferences || {},
+          preferences,
+          savedPassages: userData?.savedPassages || [],
           createdAt: userData?.createdAt,
           updatedAt: userData?.updatedAt
         }
@@ -451,19 +450,24 @@ app.put(
   async (req: Request, res: Response) => {
     try {
       const authReq = req as AuthenticatedRequest;
-
-      const allowedFields = ['denomination', 'theologicalLean', 'preferences'];
-      const updates: any = {};
-
-      for (const field of allowedFields) {
-        if (req.body[field] !== undefined) {
-          updates[field] = req.body[field];
-        }
+      const validation = UpdateProfileSchema.safeParse(req.body);
+      if (!validation.success) {
+        res.status(400).json({
+          error: 'Invalid request',
+          details: validation.error.flatten()
+        });
+        return;
       }
 
-      updates.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+      const updates = {
+        ...validation.data,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
 
-      await db.collection('users').doc(authReq.user!.uid).update(updates);
+      await db
+        .collection('users')
+        .doc(authReq.user!.uid)
+        .set(updates, { merge: true });
 
       res.json({
         success: true,

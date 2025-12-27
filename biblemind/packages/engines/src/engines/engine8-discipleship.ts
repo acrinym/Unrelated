@@ -26,15 +26,13 @@
  * Adapted for spiritual formation / discipleship context
  */
 
-import { OpenAI } from 'openai';
 import { DiscipleshipPrediction, BiblicalReasoning } from '../types';
+import { LanguageModel } from '../llm/types';
 
 export class DiscipleshipTracking {
-  private openai: OpenAI;
-
-  constructor(openai: OpenAI) {
-    this.openai = openai;
-  }
+  // Reserved for future LLM-driven analytics
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  constructor(private llm?: LanguageModel) {}
 
   /**
    * Record a prediction (what we expect will happen)

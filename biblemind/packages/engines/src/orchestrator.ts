@@ -15,7 +15,8 @@
  * 8. Return complete BiblicalReasoning result
  */
 
-import { OpenAI } from 'openai';
+import { GeminiFlashClient } from './llm/gemini-flash-client';
+import { LanguageModel } from './llm/types';
 import {
   BiblicalReasoning,
   UserContext,
@@ -49,14 +50,14 @@ interface KnowledgeGraph {
 }
 
 export interface OrchestratorConfig {
-  openaiApiKey: string;
+  geminiApiKey: string;
   knowledgeGraph?: KnowledgeGraph;
   enabledEngines?: number[]; // Which engines to run (default: all)
   depth?: 1 | 2 | 3 | 4 | 5; // How deep to analyze (default: 3)
 }
 
 export class HolographicReasoningOrchestrator {
-  private openai: OpenAI;
+  private llm: LanguageModel;
   private knowledgeGraph?: KnowledgeGraph;
   private engines: {
     wisdomFilter: BiblicalWisdomFilter;
@@ -72,21 +73,21 @@ export class HolographicReasoningOrchestrator {
   };
 
   constructor(config: OrchestratorConfig) {
-    this.openai = new OpenAI({ apiKey: config.openaiApiKey });
+    this.llm = new GeminiFlashClient(config.geminiApiKey);
     this.knowledgeGraph = config.knowledgeGraph;
 
     // Initialize all 10 engines
     this.engines = {
-      wisdomFilter: new BiblicalWisdomFilter(this.openai),
-      oracle: new BiblicalOracle(this.openai, this.knowledgeGraph as any),
-      covenant: new CovenantAnalysisEngine(this.openai),
-      tribunal: new TheologicalCouncil(this.openai),
-      pastoralRisk: new PastoralRiskEngine(this.openai),
-      crossTestament: new CrossTestamentIntegration(this.openai),
-      synthesis: new IntegratedDiscernmentSynthesis(this.openai),
+      wisdomFilter: new BiblicalWisdomFilter(this.llm),
+      oracle: new BiblicalOracle(this.llm, this.knowledgeGraph as any),
+      covenant: new CovenantAnalysisEngine(this.llm),
+      tribunal: new TheologicalCouncil(this.llm),
+      pastoralRisk: new PastoralRiskEngine(this.llm),
+      crossTestament: new CrossTestamentIntegration(this.llm),
+      synthesis: new IntegratedDiscernmentSynthesis(this.llm),
       memory: new ScriptureMemory(),
-      discipleship: new DiscipleshipTracking(this.openai),
-      heartCondition: new HeartConditionAnalysis(this.openai)
+      discipleship: new DiscipleshipTracking(this.llm),
+      heartCondition: new HeartConditionAnalysis(this.llm)
     };
   }
 
@@ -393,8 +394,8 @@ export class HolographicReasoningOrchestrator {
   } {
     const errors: string[] = [];
 
-    if (!config.openaiApiKey) {
-      errors.push('OpenAI API key is required');
+    if (!config.geminiApiKey) {
+      errors.push('Gemini API key is required');
     }
 
     if (config.enabledEngines) {
@@ -438,7 +439,7 @@ export async function analyzeBiblicalQuestion(
  *   "How do I forgive someone who hurt me deeply?",
  *   "user123",
  *   {
- *     openaiApiKey: process.env.OPENAI_API_KEY,
+ *     geminiApiKey: process.env.GEMINI_API_KEY!,
  *     knowledgeGraph: myKnowledgeGraphInstance
  *   }
  * );

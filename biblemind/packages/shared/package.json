@@ -1,7 +1,7 @@
 {
-  "name": "@biblemind/engines",
+  "name": "@biblemind/shared",
   "version": "0.1.0",
-  "description": "Biblical Holographic Reasoning Engines - 10 parallel engines for multi-perspective theological analysis",
+  "description": "Shared types, schemas, and helpers for BibleMind apps",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -12,8 +12,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.21.0",
-    "@pinecone-database/pinecone": "^1.1.2"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

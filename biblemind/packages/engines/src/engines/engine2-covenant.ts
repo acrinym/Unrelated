@@ -27,14 +27,14 @@
  * Adapted for covenant theology context
  */
 
-import { OpenAI } from 'openai';
 import { CovenantAnalysis, BiblicalCovenant, Scripture, AffectAnalysis } from '../types';
+import { LanguageModel } from '../llm/types';
 
 export class CovenantAnalysisEngine {
-  private openai: OpenAI;
+  private llm: LanguageModel;
 
-  constructor(openai: OpenAI) {
-    this.openai = openai;
+  constructor(llm: LanguageModel) {
+    this.llm = llm;
   }
 
   /**
@@ -46,23 +46,13 @@ export class CovenantAnalysisEngine {
   ): Promise<CovenantAnalysis> {
     try {
       const prompt = this.buildAnalysisPrompt(question, affectContext);
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: this.getSystemPrompt()
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        response_format: { type: 'json_object' },
+      const response = await this.llm.generateJsonResponse({
+        systemPrompt: this.getSystemPrompt(),
+        userPrompt: prompt,
         temperature: 0.7
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{}');
+      const result = JSON.parse(response || '{}');
 
       return {
         relevantCovenants: result.relevantCovenants || [],

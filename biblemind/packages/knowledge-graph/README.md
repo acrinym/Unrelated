@@ -66,7 +66,7 @@ docker run -p 6333:6333 -p 6334:6334 \
 
 Sign up at https://cloud.qdrant.io
 
-**Create collection with 1536 dimensions (OpenAI embeddings):**
+**Create collection with 768 dimensions (Gemini text-embedding-004 embeddings):**
 
 ```typescript
 import { QdrantClient } from '@qdrant/js-client-rest';
@@ -108,7 +108,7 @@ await client.createPayloadIndex('biblemind_scriptures', {
 ### 2. Ingest Biblical Texts
 
 For each verse:
-1. Generate embedding using OpenAI `text-embedding-3-large`
+1. Generate embedding using Gemini `text-embedding-004`
 2. Store in Qdrant with payload (metadata):
    - reference (e.g., "John 3:16")
    - text (full verse)
@@ -120,16 +120,16 @@ For each verse:
    - strongsNumbers (concordance)
 
 ```typescript
-const embedding = await openai.embeddings.create({
-  model: 'text-embedding-3-large',
-  input: verseText
+const embedding = await gemini.embedContent({
+  model: 'text-embedding-004',
+  content: { parts: [{ text: verseText }] }
 });
 
 await client.upsert('biblemind_scriptures', {
   wait: true,
   points: [{
     id: 'john-3-16',
-    vector: embedding.data[0].embedding,
+    vector: embedding.embedding.values,
     payload: {
       reference: 'John 3:16',
       text: 'For God so loved the world...',
@@ -151,15 +151,16 @@ await client.upsert('biblemind_scriptures', {
 ```typescript
 export class BiblicalKnowledgeGraph implements KnowledgeGraph {
   private qdrant: QdrantClient;
-  private openai: OpenAI;
+  private embeddings: GenerativeModel;
   private collectionName = 'biblemind_scriptures';
 
-  constructor(config: { qdrantUrl?: string; qdrantApiKey?: string; openaiApiKey: string }) {
+  constructor(config: { qdrantUrl?: string; qdrantApiKey?: string; geminiApiKey: string }) {
     this.qdrant = new QdrantClient({
       url: config.qdrantUrl || 'http://localhost:6333',
       apiKey: config.qdrantApiKey
     });
-    this.openai = new OpenAI({ apiKey: config.openaiApiKey });
+    const genAI = new GoogleGenerativeAI({ apiKey: config.geminiApiKey });
+    this.embeddings = genAI.getGenerativeModel({ model: 'text-embedding-004' });
   }
 
   async searchScriptures(
@@ -172,9 +173,8 @@ export class BiblicalKnowledgeGraph implements KnowledgeGraph {
     topK: number = 20
   ): Promise<Scripture[]> {
     // 1. Generate query embedding
-    const embedding = await this.openai.embeddings.create({
-      model: 'text-embedding-3-large',
-      input: query
+    const embedding = await this.embeddings.embedContent({
+      content: { parts: [{ text: query }] }
     });
 
     // 2. Build Qdrant filter
@@ -205,7 +205,7 @@ export class BiblicalKnowledgeGraph implements KnowledgeGraph {
 
     // 3. Search Qdrant
     const results = await this.qdrant.search(this.collectionName, {
-      vector: embedding.data[0].embedding,
+      vector: embedding.embedding.values,
       filter: qdrantFilter.must.length > 0 ? qdrantFilter : undefined,
       limit: topK,
       with_payload: true,
@@ -237,14 +237,13 @@ export class BiblicalKnowledgeGraph implements KnowledgeGraph {
     filters?: any,
     topK: number = 20
   ): Promise<Scripture[]> {
-    const embedding = await this.openai.embeddings.create({
-      model: 'text-embedding-3-large',
-      input: query
+    const embedding = await this.embeddings.embedContent({
+      content: { parts: [{ text: query }] }
     });
 
     // Qdrant supports full-text search on payload fields
     const results = await this.qdrant.search(this.collectionName, {
-      vector: embedding.data[0].embedding,
+      vector: embedding.embedding.values,
       filter: {
         must: [
           ...(filters?.must || []),
@@ -365,7 +364,7 @@ import { BiblicalKnowledgeGraph } from '@biblemind/knowledge-graph';
 const kg = new BiblicalKnowledgeGraph({
   qdrantUrl: process.env.QDRANT_URL || 'http://localhost:6333',
   qdrantApiKey: process.env.QDRANT_API_KEY, // Optional for local
-  openaiApiKey: process.env.OPENAI_API_KEY
+  geminiApiKey: process.env.GEMINI_API_KEY!
 });
 
 // Test semantic search

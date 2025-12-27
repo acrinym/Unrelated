@@ -97,7 +97,7 @@ biblemind/
 - Node.js 20+
 - npm 9+
 - Firebase account
-- OpenAI API key
+- Gemini API key
 - Qdrant (self-hosted via Docker or Qdrant Cloud for knowledge graph)
 
 ### Installation
@@ -133,7 +133,7 @@ npm install
 
 # Set up environment variables
 cp .env.example .env
-# Edit .env with your OpenAI API key and Firebase credentials
+# Edit .env with your Gemini API key and Firebase credentials
 
 # Run development server
 npm run dev
@@ -160,7 +160,7 @@ import { analyzeBiblicalQuestion } from '@biblemind/engines';
 const result = await analyzeBiblicalQuestion(
   "How do I forgive someone who hurt me deeply?",
   "user123",
-  { openaiApiKey: process.env.OPENAI_API_KEY }
+  { geminiApiKey: process.env.GEMINI_API_KEY }
 );
 
 console.log(result.synthesis); // Full biblical guidance
@@ -315,7 +315,7 @@ Yes, and here's how:
 - **Vector DB**: Qdrant (open-source, self-hosted or cloud)
 
 ### AI Layer
-- **LLM**: OpenAI GPT-4 Turbo
+- **LLM**: Google Gemini 2.0 Flash
 - **Embeddings**: text-embedding-3-large
 - **Reasoning**: Custom holographic engine
 
