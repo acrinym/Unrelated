@@ -316,7 +316,7 @@ Yes, and here's how:
 
 ### AI Layer
 - **LLM**: Google Gemini 2.0 Flash
-- **Embeddings**: text-embedding-3-large
+- **Embeddings**: gemini-embedding-001
 - **Reasoning**: Custom holographic engine
 
 ---

@@ -140,7 +140,7 @@ biblemind/
 
 **Technology:**
 - Qdrant vector database (open-source, self-hosted or cloud)
-- OpenAI embeddings (text-embedding-3-large)
+- Gemini embeddings (gemini-embedding-001)
 - Scripture references indexed by book/chapter/verse
 - Thematic tagging system
 - **Cost advantage:** Free self-hosted, or 10x cheaper than Pinecone at scale
@@ -387,7 +387,7 @@ npx tsx examples/basic-usage.ts
 ## 📦 Dependencies
 
 ### Core Dependencies
-- `@google/generative-ai` - Gemini 2.0 Flash for reasoning
+- `@google/genai` - Gemini 2.0 Flash for reasoning
 - `firebase-admin` - Backend authentication & database
 - `express` - API server
 - `typescript` - Type safety throughout

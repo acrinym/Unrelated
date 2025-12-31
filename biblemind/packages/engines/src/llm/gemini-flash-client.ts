@@ -1,11 +1,11 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/genai';
 import { LLMRequest, LanguageModel } from './types';
 
 export class GeminiFlashClient implements LanguageModel {
   private model;
 
   constructor(apiKey: string, modelName = 'gemini-2.0-flash') {
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const genAI = new GoogleGenerativeAI({ apiKey });
     this.model = genAI.getGenerativeModel({
       model: modelName
     });

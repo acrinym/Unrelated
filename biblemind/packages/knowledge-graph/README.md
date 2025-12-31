@@ -66,7 +66,7 @@ docker run -p 6333:6333 -p 6334:6334 \
 
 Sign up at https://cloud.qdrant.io
 
-**Create collection with 768 dimensions (Gemini text-embedding-004 embeddings):**
+**Create collection with 768 dimensions (Gemini gemini-embedding-001 embeddings):**
 
 ```typescript
 import { QdrantClient } from '@qdrant/js-client-rest';
@@ -79,7 +79,7 @@ const client = new QdrantClient({
 // Create collection for Bible verses
 await client.createCollection('biblemind_scriptures', {
   vectors: {
-    size: 1536,
+    size: 768,
     distance: 'Cosine'
   },
   optimizers_config: {
@@ -108,7 +108,7 @@ await client.createPayloadIndex('biblemind_scriptures', {
 ### 2. Ingest Biblical Texts
 
 For each verse:
-1. Generate embedding using Gemini `text-embedding-004`
+1. Generate embedding using Gemini `gemini-embedding-001`
 2. Store in Qdrant with payload (metadata):
    - reference (e.g., "John 3:16")
    - text (full verse)
@@ -121,7 +121,7 @@ For each verse:
 
 ```typescript
 const embedding = await gemini.embedContent({
-  model: 'text-embedding-004',
+  model: 'gemini-embedding-001',
   content: { parts: [{ text: verseText }] }
 });
 
@@ -160,7 +160,7 @@ export class BiblicalKnowledgeGraph implements KnowledgeGraph {
       apiKey: config.qdrantApiKey
     });
     const genAI = new GoogleGenerativeAI({ apiKey: config.geminiApiKey });
-    this.embeddings = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+    this.embeddings = genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
   }
 
   async searchScriptures(
@@ -437,8 +437,8 @@ async function ingestBible() {
 ## Cost Estimate
 
 ### One-Time Setup (Ingestion)
-Ingesting ~31,000 verses with OpenAI embeddings:
-- 31,000 verses × $0.00013 per 1K tokens ≈ **$4-5 one-time**
+Ingesting ~31,000 verses with Gemini `gemini-embedding-001`:
+- Check current Gemini embedding pricing; historically this volume is only a few dollars total for the full Bible.
 
 ### Ongoing Costs (Qdrant Hosting)
 

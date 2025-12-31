@@ -279,11 +279,11 @@ async function example6_ConfigValidation() {
 
 async function main() {
   // Check for API key
-if (!process.env.GEMINI_API_KEY) {
-  console.error('ERROR: GEMINI_API_KEY environment variable not set');
-  console.error('Set it with: export GEMINI_API_KEY=your-key-here');
-  process.exit(1);
-}
+  if (!process.env.GEMINI_API_KEY) {
+    console.error('ERROR: GEMINI_API_KEY environment variable not set');
+    console.error('Set it with: export GEMINI_API_KEY=your-key-here');
+    process.exit(1);
+  }
 
   console.log('BibleMind Holographic Reasoning Engine - Examples\n');
   console.log('='.repeat(60));
