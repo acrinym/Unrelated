@@ -13,14 +13,14 @@
  * Adapted for biblical/theological context
  */
 
-import { OpenAI } from 'openai';
+import { LanguageModel } from '../llm/types';
 import { WisdomFilterResult, Scripture } from '../types';
 
 export class BiblicalWisdomFilter {
-  private openai: OpenAI;
+  private llm: LanguageModel;
 
-  constructor(openai: OpenAI) {
-    this.openai = openai;
+  constructor(llm: LanguageModel) {
+    this.llm = llm;
   }
 
   /**
@@ -31,23 +31,13 @@ export class BiblicalWisdomFilter {
 
     try {
       const prompt = this.buildEvaluationPrompt(question);
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: this.getSystemPrompt()
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.3  // Lower temperature for consistent safety checks
+      const response = await this.llm.generateJsonResponse({
+        systemPrompt: this.getSystemPrompt(),
+        userPrompt: prompt,
+        temperature: 0.3
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{}');
+      const result = JSON.parse(response || '{}');
 
       return {
         status: result.status as 'CLEAR' | 'PROCEED_WITH_WARNING' | 'VETO',

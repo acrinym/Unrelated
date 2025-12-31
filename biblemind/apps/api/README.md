@@ -20,7 +20,7 @@ REST API for the BibleMind Biblical Holographic Reasoning Engine. Provides endpo
 - **Framework**: Express.js + TypeScript
 - **Authentication**: Firebase Admin SDK
 - **Reasoning Engine**: @biblemind/engines (10-engine holographic system)
-- **AI**: OpenAI GPT-4 Turbo
+- **AI**: Google Gemini 2.0 Flash
 - **Database**: Firestore
 - **Validation**: Zod
 
@@ -41,7 +41,7 @@ cp .env.example .env
 ```
 
 Required variables:
-- `OPENAI_API_KEY`: Your OpenAI API key
+- `GEMINI_API_KEY`: Your Gemini API key
 - `FIREBASE_PROJECT_ID`: Firebase project ID
 - `FIREBASE_CLIENT_EMAIL`: Firebase service account email
 - `FIREBASE_PRIVATE_KEY`: Firebase service account private key
@@ -414,7 +414,7 @@ gcloud logs read
 - API response times (target: < 10s for complex questions)
 - Error rates (target: < 1%)
 - Rate limit hits
-- OpenAI API usage and costs
+- Gemini API usage and costs
 - Firestore read/write operations
 - Active users (free vs premium)
 
@@ -429,7 +429,7 @@ gcloud logs read
 
 ## Cost Optimization
 
-1. **Cache Common Questions**: Cache popular questions to reduce OpenAI API calls
+1. **Cache Common Questions**: Cache popular questions to reduce Gemini API calls
 2. **Optimize Token Usage**: Monitor and optimize prompt sizes
 3. **Firestore Indexes**: Create indexes for common queries
 4. **Rate Limiting**: Prevents abuse and runaway costs

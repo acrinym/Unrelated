@@ -20,7 +20,6 @@
  * Adapted for biblical context
  */
 
-import { OpenAI } from 'openai';
 import {
   SynthesisResult,
   OraclePerspective,
@@ -34,6 +33,7 @@ import {
   Scripture,
   ActionStep
 } from '../types';
+import { LanguageModel } from '../llm/types';
 
 interface SynthesisInputs {
   wisdom: WisdomFilterResult;
@@ -47,10 +47,10 @@ interface SynthesisInputs {
 }
 
 export class IntegratedDiscernmentSynthesis {
-  private openai: OpenAI;
+  private llm: LanguageModel;
 
-  constructor(openai: OpenAI) {
-    this.openai = openai;
+  constructor(llm: LanguageModel) {
+    this.llm = llm;
   }
 
   /**
@@ -59,24 +59,13 @@ export class IntegratedDiscernmentSynthesis {
   async synthesize(inputs: SynthesisInputs, question: string): Promise<SynthesisResult> {
     try {
       const prompt = this.buildSynthesisPrompt(inputs, question);
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: this.getSystemPrompt()
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-        max_tokens: 3000  // Allow longer synthesis
+      const response = await this.llm.generateJsonResponse({
+        systemPrompt: this.getSystemPrompt(),
+        userPrompt: prompt,
+        temperature: 0.7
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{}');
+      const result = JSON.parse(response || '{}');
 
       return {
         answer: result.answer || '',

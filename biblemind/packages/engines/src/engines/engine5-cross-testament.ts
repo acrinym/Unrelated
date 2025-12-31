@@ -26,14 +26,14 @@
  * Adapted for Old Testament/New Testament integration
  */
 
-import { OpenAI } from 'openai';
 import { CrossTestamentAnalysis, AffectAnalysis, Scripture } from '../types';
+import { LanguageModel } from '../llm/types';
 
 export class CrossTestamentIntegration {
-  private openai: OpenAI;
+  private llm: LanguageModel;
 
-  constructor(openai: OpenAI) {
-    this.openai = openai;
+  constructor(llm: LanguageModel) {
+    this.llm = llm;
   }
 
   /**
@@ -45,23 +45,13 @@ export class CrossTestamentIntegration {
   ): Promise<CrossTestamentAnalysis> {
     try {
       const prompt = this.buildIntegrationPrompt(question, affectContext);
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: this.getSystemPrompt()
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        response_format: { type: 'json_object' },
+      const response = await this.llm.generateJsonResponse({
+        systemPrompt: this.getSystemPrompt(),
+        userPrompt: prompt,
         temperature: 0.7
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{}');
+      const result = JSON.parse(response || '{}');
 
       return {
         oldTestament: {

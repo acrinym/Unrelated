@@ -27,19 +27,19 @@
  * Adapted for theological/denominational context
  */
 
-import { OpenAI } from 'openai';
 import {
   TribunalResult,
   TribunalVoice,
   OraclePerspective,
   AffectAnalysis
 } from '../types';
+import { LanguageModel } from '../llm/types';
 
 export class TheologicalCouncil {
-  private openai: OpenAI;
+  private llm: LanguageModel;
 
-  constructor(openai: OpenAI) {
-    this.openai = openai;
+  constructor(llm: LanguageModel) {
+    this.llm = llm;
   }
 
   /**
@@ -52,24 +52,13 @@ export class TheologicalCouncil {
   ): Promise<TribunalResult> {
     try {
       const prompt = this.buildTribunalPrompt(oraclePerspectives, question, affectContext);
-      const response = await this.openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: this.getSystemPrompt()
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-        max_tokens: 2500
+      const response = await this.llm.generateJsonResponse({
+        systemPrompt: this.getSystemPrompt(),
+        userPrompt: prompt,
+        temperature: 0.7
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{}');
+      const result = JSON.parse(response || '{}');
 
       return {
         voices: result.voices || [],

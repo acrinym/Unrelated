@@ -20,13 +20,13 @@
  * Adapted for biblical/theological context
  */
 
-import { OpenAI } from 'openai';
 import {
   OraclePerspective,
   TheologicalPerspective,
   AffectAnalysis,
   Scripture
 } from '../types';
+import { LanguageModel } from '../llm/types';
 
 // Placeholder for KnowledgeGraph - will be implemented separately
 interface KnowledgeGraph {
@@ -34,11 +34,11 @@ interface KnowledgeGraph {
 }
 
 export class BiblicalOracle {
-  private openai: OpenAI;
+  private llm: LanguageModel;
   private knowledgeGraph: KnowledgeGraph;
 
-  constructor(openai: OpenAI, knowledgeGraph: KnowledgeGraph) {
-    this.openai = openai;
+  constructor(llm: LanguageModel, knowledgeGraph: KnowledgeGraph) {
+    this.llm = llm;
     this.knowledgeGraph = knowledgeGraph;
   }
 
@@ -201,23 +201,13 @@ Return JSON:
   "summary": "Brief summary of what ${perspective} perspective contributes"
 }`;
 
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a biblical scholar analyzing questions from different theological perspectives. You have deep knowledge of Scripture, theology, and how different traditions approach biblical interpretation. Provide insights that are faithful to Scripture, pastorally sensitive, and theologically sound.`
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      response_format: { type: 'json_object' },
+    const response = await this.llm.generateJsonResponse({
+      systemPrompt: `You are a biblical scholar analyzing questions from different theological perspectives. You have deep knowledge of Scripture, theology, and how different traditions approach biblical interpretation. Provide insights that are faithful to Scripture, pastorally sensitive, and theologically sound.`,
+      userPrompt: prompt,
       temperature: 0.7
     });
 
-    const result = JSON.parse(response.choices[0].message.content || '{}');
+    const result = JSON.parse(response || '{}');
 
     // Extract insights and scripture references
     const insights = result.insights || [];
