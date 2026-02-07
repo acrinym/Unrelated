@@ -1,11 +1,15 @@
 use std::path::{Path, PathBuf};
 use anyhow::Result;
 use rusqlite::{Connection, params};
-use zstd::stream::{Encoder, Decoder};
+use flate2::write::GzEncoder;
+use flate2::read::GzDecoder;
+use flate2::Compression;
 use std::io::{Read, Write};
 use std::fs;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use rayon::prelude::*;
+use std::sync::{Arc, Mutex};
 
 /// ContextDB - Ripgrep-powered context storage
 pub struct ContextDB {
@@ -60,21 +64,7 @@ impl ContextDB {
             [],
         )?;
         
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS index_entries (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                file_id INTEGER NOT NULL,
-                line_number INTEGER NOT NULL,
-                line_content TEXT NOT NULL,
-                FOREIGN KEY(file_id) REFERENCES files(id)
-            )",
-            [],
-        )?;
-        
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_line_content ON index_entries(line_content)",
-            [],
-        )?;
+        // Removed index_entries table to reduce bloat
         
         Ok(())
     }
@@ -110,6 +100,7 @@ impl ContextDB {
         let project_dir = self.projects_path.join(project_name);
         let mut ingested = 0;
         
+        // Process files
         for file_path in file_paths {
             if let Ok(content) = fs::read_to_string(file_path) {
                 // Compress content
@@ -128,36 +119,16 @@ impl ContextDB {
                 let storage_path = project_dir.join(&hash);
                 fs::write(&storage_path, &compressed)?;
                 
-                // Insert file record (use INSERT OR IGNORE to handle duplicates)
-                let file_id: i64 = match conn.query_row(
-                    "SELECT id FROM files WHERE project_id = ?1 AND path = ?2",
-                    params![project_id, relative_path],
-                    |row| row.get(0),
-                ) {
-                    Ok(id) => id,
-                    Err(_) => {
-                        // File doesn't exist, insert it
-                        conn.execute(
-                            "INSERT INTO files (project_id, path, content_hash, compressed_size) VALUES (?1, ?2, ?3, ?4)",
-                            params![project_id, relative_path, hash, compressed.len()],
-                        )?;
-                        conn.last_insert_rowid()
-                    }
-                };
-                
-                // Clear old index entries for this file
+                // Insert file record
                 conn.execute(
-                    "DELETE FROM index_entries WHERE file_id = ?1",
-                    params![file_id],
+                    "INSERT INTO files (project_id, path, content_hash, compressed_size) 
+                     VALUES (?1, ?2, ?3, ?4)
+                     ON CONFLICT(project_id, path) DO UPDATE SET
+                     content_hash = excluded.content_hash,
+                     compressed_size = excluded.compressed_size,
+                     created_at = CURRENT_TIMESTAMP",
+                    params![project_id, relative_path, hash, compressed.len()],
                 )?;
-                
-                // Index lines
-                for (line_num, line) in content.lines().enumerate() {
-                    conn.execute(
-                        "INSERT INTO index_entries (file_id, line_number, line_content) VALUES (?1, ?2, ?3)",
-                        params![file_id, line_num as i32 + 1, line],
-                    )?;
-                }
                 
                 ingested += 1;
             }
@@ -177,65 +148,61 @@ impl ContextDB {
             |row| row.get(0),
         )?;
         
-        let mut results = Vec::new();
-        
-        // Search index (ripgrep-like pattern matching)
-        let pattern = format!("%{}%", query);
-        let mut stmt = conn.prepare(
-            "SELECT f.path, e.line_number, e.line_content, f.content_hash
-             FROM index_entries e
-             JOIN files f ON e.file_id = f.id
-             WHERE f.project_id = ?1 AND e.line_content LIKE ?2
-             LIMIT 100"
-        )?;
-        
-        let rows = stmt.query_map(params![project_id, pattern], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, i32>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-            ))
+        // Get all files for the project
+        let mut stmt = conn.prepare("SELECT path, content_hash FROM files WHERE project_id = ?1")?;
+        let files_iter = stmt.query_map(params![project_id], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
         })?;
         
-        for row in rows {
-            let (file_path, line_num, line_content, hash) = row?;
-            
-            let mut result = SearchResult {
-                file_path,
-                line_number: line_num,
-                line_content,
-                full_context: None,
-            };
-            
-            // If whole context requested, decompress and return full file
-            if whole_context {
-                let project_dir = self.projects_path.join(project_name);
-                let storage_path = project_dir.join(&hash);
-                if let Ok(compressed) = fs::read(&storage_path) {
-                    if let Ok(full_content) = self.decompress(&compressed) {
-                        result.full_context = Some(full_content);
+        let files: Vec<(String, String)> = files_iter.collect::<Result<_, _>>()?;
+        let project_dir = self.projects_path.join(project_name);
+        
+        // Parallel search using Rayon
+        let results = Arc::new(Mutex::new(Vec::new()));
+        
+        files.par_iter().for_each(|(path, hash)| {
+            let storage_path = project_dir.join(hash);
+            if let Ok(compressed) = fs::read(&storage_path) {
+                if let Ok(content) = self.decompress_bytes(&compressed) {
+                    for (i, line) in content.lines().enumerate() {
+                        if line.contains(query) {
+                            let mut result = SearchResult {
+                                file_path: path.clone(),
+                                line_number: (i + 1) as i32,
+                                line_content: line.to_string(),
+                                full_context: None,
+                            };
+                            
+                            if whole_context {
+                                result.full_context = Some(content.clone());
+                            }
+                            
+                            if let Ok(mut lock) = results.lock() {
+                                if lock.len() < 100 { // Limit results
+                                    lock.push(result);
+                                }
+                            }
+                        }
                     }
                 }
             }
-            
-            results.push(result);
-        }
+        });
         
-        Ok(results)
+        let final_results = Arc::try_unwrap(results).unwrap().into_inner().unwrap();
+        Ok(final_results)
     }
     
     fn compress(&self, data: &str) -> Result<Vec<u8>> {
-        let mut encoder = Encoder::new(Vec::new(), 3)?;
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
         encoder.write_all(data.as_bytes())?;
         Ok(encoder.finish()?)
     }
-    
-    fn decompress(&self, data: &[u8]) -> Result<String> {
-        let mut decoder = Decoder::new(data)?;
-        let mut decompressed = String::new();
-        decoder.read_to_string(&mut decompressed)?;
-        Ok(decompressed)
+
+    fn decompress_bytes(&self, data: &[u8]) -> Result<String> {
+        let mut decoder = GzDecoder::new(data);
+        let mut s = String::new();
+        decoder.read_to_string(&mut s)?;
+        Ok(s)
     }
     
     pub fn list_projects(&self) -> Result<Vec<String>> {
@@ -258,4 +225,3 @@ pub struct SearchResult {
     pub line_content: String,
     pub full_context: Option<String>,
 }
-

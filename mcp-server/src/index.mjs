@@ -20,9 +20,6 @@ import fs from 'fs';
 const readFile = promisify(fs.readFile);
 
 class ContextDBMCPServer {
-    private server: Server;
-    private contextdbPath: string;
-
     constructor() {
         this.server = new Server(
             {
@@ -39,7 +36,7 @@ class ContextDBMCPServer {
         // Path to contextdb binary (adjust based on build location)
         this.contextdbPath = process.env.CONTEXTDB_BINARY || 
             (process.platform === 'win32' 
-                ? 'D:\\RustTemp\\release\\contextdb.exe'
+                ? 'D:\\GitHub\\Unrelated\\target\\release\\contextdb.exe'
                 : 'contextdb');
 
         this.setupHandlers();

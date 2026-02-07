@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="48" height="48" version="1.1" xmlns="http://www.w3.org/2000/svg">
+ <rect width="13" height="2" ry="1" style="fill-rule:evenodd;fill:#f8c700"/>
+ <rect width="2" height="13" ry="1" style="fill-rule:evenodd;fill:#f8c700"/>
+ <rect x="35" y="46" width="13" height="2" ry="1" style="fill-rule:evenodd;fill:#f8c700"/>
+ <rect x="46" y="35" width="2" height="13" ry="1" style="fill-rule:evenodd;fill:#f8c700"/>
+ <rect x="35" width="13" height="2" ry="1" style="fill-rule:evenodd;fill:#f8c700"/>
+ <rect x="46" width="2" height="13" ry="1" style="fill-rule:evenodd;fill:#f8c700"/>
+ <rect y="46" width="13" height="2" ry="1" style="fill-rule:evenodd;fill:#f8c700"/>
+ <rect y="35" width="2" height="13" ry="1" style="fill-rule:evenodd;fill:#f8c700"/>
+</svg>

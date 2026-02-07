@@ -1,0 +1,9 @@
+# List of source files containing translatable strings.
+src/main.c
+src/gweled-gui.c
+src/board_engine.c
+src/gweled-scores.c
+src/gweled.ui
+src/gweled-headermenu.ui
+data/org.gweled.gweled.desktop.in
+data/org.gweled.gweled.appdata.xml.in

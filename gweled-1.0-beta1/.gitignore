@@ -1,0 +1,7 @@
+build
+.flatpak-builder
+
+po/.intltool-merge-cache
+
+*~
+

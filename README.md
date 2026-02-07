@@ -1,6 +1,6 @@
-# ContextDB - Ripgrep-Powered Context Storage for AI Agents
+# ContextDB - Fast, Compressed Context Storage for AI Agents
 
-**A high-performance, whole-context database system that works like ripgrep but with persistent storage.**
+**A high-performance, whole-context database system for AI context management.**
 
 ---
 
@@ -8,71 +8,95 @@
 
 ContextDB enables AI agents (like me!) to:
 - **Store** entire codebases, books, documentation with whole-context integrity
-- **Search** as fast as ripgrep with persistent storage
-- **Access** via MCP toolcalls or CLI commands
+- **Search** with parallel execution (rayon) on persistent storage
+- **Access** via CLI commands
 - **Remember** codebase structure across sessions without re-reading
 
 ---
 
-## 🚀 Installation
+## 🚀 Installation & Setup
 
-### Prerequisites: Rust on D: Drive
+### Requirements
+- **Rust Toolchain**: `stable-x86_64-pc-windows-gnu` (Recommended for Windows)
+- **MinGW-w64**: Required for building with GNU toolchain (included in repository)
 
-**⚠️ IMPORTANT: Rust must be installed on D: drive, not C:**
+### Quick Setup (Recommended)
+This repository includes a portable `w64devkit` (MinGW-w64) and a helper script to set up the environment automatically.
 
-1. **Download Rust installer:**
+1. **Open PowerShell in the repository root**
+2. **Run the setup shell:**
    ```powershell
-   # Download rustup-init.exe from https://rustup.rs/
+   .\dev_shell.ps1
+   ```
+   This will configure your PATH to use the local compiler tools.
+
+3. **Build the project:**
+   ```powershell
+   cargo build --release
    ```
 
-2. **Set custom installation path:**
-   ```powershell
-   # Set environment variables BEFORE running rustup-init.exe
-   $env:CARGO_HOME = "D:\rust\cargo"
-   $env:RUSTUP_HOME = "D:\rust\rustup"
-   
-   # Run installer
-   .\rustup-init.exe
-   ```
-
-3. **Add to PATH (permanent):**
-   ```powershell
-   # Add to user PATH environment variable
-   [Environment]::SetEnvironmentVariable("Path", $env:Path + ";D:\rust\cargo\bin", "User")
-   ```
-
-4. **Verify installation:**
-   ```powershell
-   rustc --version
-   cargo --version
-   ```
-
-### Build ContextDB
-
-```bash
-cd D:\tools\contextdb
-cargo build --release
-```
+### Manual Setup
+If you prefer to configure it manually:
+1. Ensure `rustup toolchain install stable-x86_64-pc-windows-gnu` is installed.
+2. Add `w64devkit/bin` to your PATH.
+3. Run `cargo build`.
 
 ---
 
-## 📖 Quick Start
+## 📖 Usage
 
 ### Initialize a Project
 ```bash
-contextdb init --project=phoenix --path=D:\GitHub\PhoenixVisualizer
+# Note: --path is now a named argument
+cargo run -- init --project test --path .
+```
+
+### Ingest Files
+```bash
+cargo run -- ingest --project test src/main.rs src/lib.rs
 ```
 
 ### Search
 ```bash
-contextdb search "function name" --project=phoenix
+cargo run -- search "ContextDB" --project test
 ```
 
-### MCP Access (for AI agents)
+### List Projects
 ```bash
-# MCP server runs automatically
-# AI agents can call: contextdb_search, contextdb_ingest, contextdb_list_projects
+cargo run -- list
 ```
+
+### MCP Server (for AI agents)
+
+The MCP server is a Node.js bridge that exposes ContextDB functionality to AI agents.
+
+1. **Navigate to the MCP server directory:**
+   ```bash
+   cd mcp-server
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Start the server:**
+   ```bash
+   node src/index.mjs
+   ```
+
+   **Configuration for Claude Desktop / Cursor:**
+   Add the following to your MCP settings file:
+   ```json
+   {
+     "mcpServers": {
+       "contextdb": {
+         "command": "node",
+         "args": ["D:\\GitHub\\Unrelated\\mcp-server\\src\\index.mjs"]
+       }
+     }
+   }
+   ```
 
 ---
 
@@ -80,26 +104,19 @@ contextdb search "function name" --project=phoenix
 
 ### Core Components
 
-1. **Index Engine** (Ripgrep-based)
-   - Fast regex search using ripgrep algorithm
-   - Line-level indexing
-   - File path indexing
-   - Whole-context storage (compressed)
+1. **Search Engine** (Parallel)
+   - Fast parallel search using `rayon`
+   - Optimized compressed storage (flate2/gzip)
+   - O(1) ingestion per file (no line-level indexing bloat)
 
 2. **Storage Layer**
-   - Compressed file storage (zstd compression)
+   - Compressed file storage (gzip compression)
    - Metadata database (SQLite)
    - Project management
 
-3. **MCP Server**
-   - Toolcalls for AI agent access
-   - `contextdb_search` - Search projects
-   - `contextdb_ingest` - Add files/projects
-   - `contextdb_list_projects` - List available projects
-
-4. **CLI Interface**
-   - Ripgrep-like commands
+3. **CLI Interface**
    - Simple, intuitive interface
+   - Fast execution
 
 ---
 
@@ -110,94 +127,24 @@ contextdb/
 ├── src/
 │   ├── main.rs (CLI)
 │   ├── lib.rs (Core library)
-│   └── mcp_server.rs (Placeholder)
-├── mcp-server/
-│   ├── src/
-│   │   └── index.mjs (Node.js MCP bridge)
-│   └── package.json
+├── w64devkit/ (Portable MinGW-w64 tools)
+├── dev_shell.ps1 (Environment setup script)
 ├── Cargo.toml
-├── README.md
-└── .gitignore
+└── README.md
 ```
-
----
-
-## 🔧 Implementation Plan
-
-### Phase 1: Core Index Engine ✅
-- [x] Ripgrep-based indexing
-- [x] File storage (compressed)
-- [x] Basic search functionality
-
-### Phase 2: MCP Server
-- [x] Node.js bridge implementation
-- [ ] MCP protocol integration
-- [ ] AI agent integration
-
-### Phase 3: CLI Interface ✅
-- [x] Ripgrep-like commands
-- [x] Project management
-- [x] User-friendly interface
-
-### Phase 4: Advanced Features
-- [ ] Incremental updates
-- [ ] Semantic search (optional holographic layer)
-- [ ] Cross-project search
 
 ---
 
 ## 💡 Key Features
 
-- **Ripgrep Speed**: Uses proven ripgrep algorithm for fast search
-- **Whole-Context**: Stores complete files, no information loss
-- **MCP Compatible**: AI agents can access via toolcalls
-- **Easy Setup**: Simple initialization and ingestion
-- **Persistent**: Context persists across sessions
-- **Compressed**: Efficient storage using zstd compression
+- **Parallel Search**: Uses `rayon` for multi-threaded search across compressed files.
+- **Whole-Context**: Stores complete files, no information loss.
+- **Bloat-Free**: Minimal metadata storage (SQLite), bulk data is compressed on disk.
+- **Portable**: Includes necessary build tools for Windows.
+- **Compressed**: Efficient storage using gzip compression (`flate2`).
 
 ---
 
-## 🎯 Use Cases
-
-### For AI Agents (like me!)
-```javascript
-// MCP toolcall
-await client.callTool({
-  name: 'contextdb_search',
-  arguments: {
-    query: 'RenderFrame',
-    project: 'phoenix',
-    options: { whole_context: true }
-  }
-});
-```
-
-### For Developers
-```bash
-# Search codebase
-contextdb search "class definition" --project=mycodebase
-
-# Ingest new project
-contextdb ingest --project=newproject --path=/path/to/code
-
-# List projects
-contextdb list
-```
-
----
-
-## 🔧 Rust Installation on D: Drive (Windows)
-
-### Method 1: Environment Variables (Recommended)
-
-1. **Before installing Rust**, set these environment variables:
-   ```powershell
-   # User-level environment variables
-   [Environment]::SetEnvironmentVariable("CARGO_HOME", "D:\rust\cargo", "User")
-   [Environment]::SetEnvironmentVariable("RUSTUP_HOME", "D:\rust\rustup", "User")
-   ```
-
-2. **Download and run rustup-init.exe** from https://rustup.rs/
 
 3. **Add to PATH:**
    ```powershell

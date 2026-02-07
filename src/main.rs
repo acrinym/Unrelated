@@ -1,10 +1,11 @@
 use contextdb::ContextDB;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use std::env;
 
 #[derive(Parser)]
 #[command(name = "contextdb")]
-#[command(about = "Ripgrep-powered context storage for AI agents")]
+#[command(about = "Fast, compressed context storage for AI agents")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -18,7 +19,7 @@ enum Commands {
         #[arg(short, long)]
         project: String,
         /// Source path to index
-        #[arg(short, long)]
+        #[arg(long)]
         path: PathBuf,
     },
     /// Ingest files into a project
@@ -48,7 +49,9 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     
     // Initialize ContextDB
-    let base_path = PathBuf::from("D:/tools/contextdb");
+    let base_path = env::var("CONTEXTDB_ROOT")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("data"));
     let db = ContextDB::new(&base_path)?;
     
     match cli.command {

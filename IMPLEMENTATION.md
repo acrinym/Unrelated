@@ -3,90 +3,67 @@
 ## 🚀 Building ContextDB
 
 ### Prerequisites
-- Rust toolchain (rustc, cargo)
-- Or C# .NET SDK (if using C# version)
+- Rust toolchain (`stable-x86_64-pc-windows-gnu`)
+- MinGW-w64 (provided via `w64devkit` in repo)
 
 ### Build Steps
 
-```bash
-cd D:\tools\contextdb
+1. **Setup Environment**:
+   ```powershell
+   .\dev_shell.ps1
+   ```
 
-# Build main CLI
-cargo build --release
-
-# Build MCP server
-cd mcp-server
-cargo build --release
-```
+2. **Build**:
+   ```powershell
+   cargo build --release
+   ```
 
 ### Installation
 
 ```bash
-# Copy binaries to PATH
-cp target/release/contextdb.exe C:\utils\
-cp target/release/contextdb-mcp.exe C:\utils\
+# Add to PATH or run via cargo run
+$env:PATH += ";D:\GitHub\Unrelated\target\release"
 ```
 
 ---
 
 ## 📖 Usage Examples
 
-### Initialize Phoenix Visualizer Project
+### Initialize Project
 
 ```bash
-contextdb init --project=phoenix --path=D:\GitHub\PhoenixVisualizer
+cargo run -- init --project test --path .
 ```
 
-### Ingest All C# Files
+### Ingest Files
 
 ```bash
-# Find all .cs files and ingest
-Get-ChildItem -Path D:\GitHub\PhoenixVisualizer -Filter "*.cs" -Recurse | 
-    ForEach-Object { $_.FullName } | 
-    contextdb ingest --project=phoenix
+cargo run -- ingest --project test src/main.rs src/lib.rs
 ```
 
 ### Search
 
 ```bash
 # Simple search
-contextdb search "RenderFrame" --project=phoenix
+cargo run -- search "ContextDB" --project test
 
 # With whole context
-contextdb search "RenderFrame" --project=phoenix --whole-context
+cargo run -- search "ContextDB" --project test --whole-context
 ```
 
 ### MCP Server (for AI agents)
 
-```bash
-# Start MCP server
-contextdb-mcp
+*Note: MCP implementation is currently a placeholder/Node.js bridge.*
 
-# AI agents can then call:
-# - contextdb_search
-# - contextdb_ingest  
-# - contextdb_list_projects
-# - contextdb_init
+```bash
+cd mcp-server
+npm install
+node src/index.mjs
 ```
 
 ---
 
 ## 🔧 MCP Integration
-
-### For Cursor/Claude Desktop
-
-Add to MCP config:
-
-```json
-{
-  "mcpServers": {
-    "contextdb": {
-      "command": "D:\\tools\\contextdb\\target\\release\\contextdb-mcp.exe",
-      "args": []
-    }
-  }
-}
-```
 
 ### Toolcall Examples
 
@@ -95,25 +72,10 @@ Add to MCP config:
 await client.callTool({
   name: 'contextdb_search',
   arguments: {
-    query: 'RenderFrame',
-    project: 'phoenix',
+    query: 'ContextDB',
+    project: 'test',
     whole_context: true
   }
-});
-
-// Ingest files
-await client.callTool({
-  name: 'contextdb_ingest',
-  arguments: {
-    project: 'phoenix',
-    paths: ['D:/GitHub/PhoenixVisualizer/src/file.cs']
-  }
-});
-
-// List projects
-await client.callTool({
-  name: 'contextdb_list_projects',
-  arguments: {}
 });
 ```
 
@@ -121,14 +83,13 @@ await client.callTool({
 
 ## 🎯 Next Steps
 
-1. **Build the project** - Test compilation
-2. **Test ingestion** - Ingest Phoenix Visualizer codebase
-3. **Test search** - Verify ripgrep-like performance
-4. **MCP integration** - Connect to Cursor/Claude Desktop
-5. **Performance tuning** - Optimize for large codebases
+1. **Build the project** - ✅
+2. **Test ingestion** - ✅
+3. **Test search** - ✅
+4. **MCP integration** - 🚧 In Progress
 
 ---
 
-**Status**: 🚧 **IN DEVELOPMENT**  
-**Location**: `D:\tools\contextdb`
+**Status**: 🚧 **BETA**
+**Location**: `D:\GitHub\Unrelated`
 

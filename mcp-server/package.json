@@ -1,7 +1,7 @@
 {
   "name": "contextdb-mcp",
   "version": "0.1.0",
-  "description": "MCP server for ContextDB - Ripgrep-powered context storage",
+  "description": "MCP server for ContextDB - Fast, compressed context storage",
   "type": "module",
   "main": "src/index.mjs",
   "bin": {

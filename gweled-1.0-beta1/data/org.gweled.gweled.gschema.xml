@@ -1,0 +1,14 @@
+<schemalist>
+  <schema id="org.gweled.gweled" path="/org/gnome/gweled/">
+    <key name="sound" type="b">
+      <default>true</default>
+      <summary>Play sound effects</summary>
+      <description>Play sound effects.</description>
+    </key>
+    <key name="hints" type="b">
+      <default>true</default>
+      <summary>Show hints</summary>
+      <description>Shot hints after inactivity.</description>
+    </key>
+  </schema>
+</schemalist>    
