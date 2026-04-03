@@ -1,7 +1,7 @@
 import pygame
 import sys
-import random
 from board import Board, BOARD_WIDTH, BOARD_HEIGHT, NUM_GEMS
+import assets
 
 # Constants
 TILE_SIZE = 64
@@ -16,16 +16,6 @@ HIGHLIGHT_COLOR = (255, 255, 255)
 TEXT_COLOR = (240, 240, 240)
 GAME_OVER_COLOR = (20, 20, 20, 200)
 
-GEM_COLORS = [
-    (230, 50, 50),    # Red
-    (50, 230, 50),    # Green
-    (50, 50, 230),    # Blue
-    (230, 230, 50),   # Yellow
-    (200, 50, 200),   # Purple
-    (50, 230, 230),   # Cyan
-    (230, 150, 50)    # Orange
-]
-
 # States
 STATE_IDLE = 0
 STATE_SWAP_ANIM = 1
@@ -34,6 +24,7 @@ STATE_REVERSE_SWAP_ANIM = 3
 STATE_MATCH_ANIM = 4
 STATE_FALL_ANIM = 5
 STATE_GAME_OVER = 6
+STATE_PAUSED = 7
 
 ANIM_SWAP_DURATION = 250 # ms
 ANIM_MATCH_DURATION = 300 # ms
@@ -48,11 +39,17 @@ class Game:
         self.font = pygame.font.Font(None, 36)
         self.large_font = pygame.font.Font(None, 72)
         
+        assets.load_assets()
+        
         self.board = Board()
         
         self.state = STATE_IDLE
         self.selected_gem = None # (x, y)
         self.swap_target = None # (x, y)
+        self.swap_src = None
+        self.swap_tgt = None
+        self.matched_gems = []
+        self.match_groups = []
         
         # Animation data
         self.anim_start_time = 0
@@ -60,6 +57,9 @@ class Game:
         self.falling_gems = [] # List of {'x', 'y', 'target_y', 'gem_type'}
         
         self.combo_multiplier = 1
+        
+        self.last_input_time = pygame.time.get_ticks()
+        self.hint_move = None # (x1, y1, x2, y2)
         
         self.running = True
 
@@ -78,10 +78,19 @@ class Game:
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                self.last_input_time = pygame.time.get_ticks()
+                self.hint_move = None
                 if event.button == 1: # Left click
                     self.handle_click(event.pos)
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r and self.state == STATE_GAME_OVER:
+                self.last_input_time = pygame.time.get_ticks()
+                self.hint_move = None
+                if event.key == pygame.K_p:
+                    if self.state == STATE_PAUSED:
+                        self.state = STATE_IDLE
+                    elif self.state == STATE_IDLE:
+                        self.state = STATE_PAUSED
+                elif event.key == pygame.K_r and self.state == STATE_GAME_OVER:
                     self.board.fill_new_board()
                     self.state = STATE_IDLE
                     self.combo_multiplier = 1
@@ -118,6 +127,8 @@ class Game:
             self.selected_gem = (grid_x, grid_y)
 
     def start_swap_animation(self, pos1, pos2):
+        self.swap_src = pos1
+        self.swap_tgt = pos2
         self.anim_start_time = pygame.time.get_ticks()
         x1, y1 = pos1
         x2, y2 = pos2
@@ -144,36 +155,6 @@ class Game:
         # But we need to know which grid cells are animating.
         # Simple hack: The draw loop will check if state is SWAP/REVERSE and skip drawing the specific cells being swapped.
 
-    def update(self, dt):
-        current_time = pygame.time.get_ticks()
-        
-        if self.state == STATE_SWAP_ANIM:
-            if current_time - self.anim_start_time >= ANIM_SWAP_DURATION:
-                # Animation done, check logic
-                x1, y1 = self.selected_gem if self.selected_gem else self.anim_gems[1]['end_pos'] # wait, selected_gem is None
-                # Retrieve coords from swap
-                # Actually, let's store swap coords in self.swap_pair
-                # For now, reconstruct from anim_gems logic is messy.
-                # Let's rely on self.swap_target which we set in handle_click
-                # But wait, self.selected_gem was cleared.
-                # I need to store the FROM gem.
-                pass 
-                # Re-logic:
-                # In handle_click: self.swap_src = self.selected_gem, self.swap_tgt = ...
-                # But I didn't save swap_src. 
-                # Let's fix handle_click logic implicitly by using anim data or storing it.
-                
-                # Let's just assume the swap animation finishes visually.
-                # Now perform logical swap.
-                # We need the coordinates.
-                # Let's store them in the class when starting swap.
-                pass
-        
-        # ... logic continues in detailed implementation below ...
-        
-        # I'll implement a proper state update method here.
-        pass
-
     def draw(self):
         self.screen.fill(BACKGROUND_COLOR)
         
@@ -183,6 +164,9 @@ class Game:
         
         if self.state == STATE_GAME_OVER:
              status_text = self.font.render("GAME OVER - Press R to Restart", True, (255, 100, 100))
+             self.screen.blit(status_text, (SCREEN_WIDTH//2 - status_text.get_width()//2, 20))
+        elif self.state == STATE_PAUSED:
+             status_text = self.font.render("PAUSED", True, (255, 255, 100))
              self.screen.blit(status_text, (SCREEN_WIDTH//2 - status_text.get_width()//2, 20))
 
         # Draw Grid Background
@@ -226,8 +210,7 @@ class Game:
             # Blink effect
             if (current_time // 100) % 2 == 0:
                 for (x, y) in self.matched_gems:
-                    gem_type = self.board.get_gem(x, y) # Wait, we haven't removed them yet?
-                    # In logic, we should remove them AFTER animation.
+                    gem_type = self.board.get_gem(x, y)
                     if gem_type != -1:
                          self.draw_gem(x * TILE_SIZE, y * TILE_SIZE, gem_type, highlight=True)
 
@@ -236,6 +219,16 @@ class Game:
             x, y = self.selected_gem
             rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE + MARGIN_TOP, TILE_SIZE, TILE_SIZE)
             pygame.draw.rect(self.screen, HIGHLIGHT_COLOR, rect, 3)
+
+        # Draw Hint
+        if self.hint_move and self.state == STATE_IDLE:
+             # Blink hint
+             if (current_time // 500) % 2 == 0:
+                 x1, y1, x2, y2 = self.hint_move
+                 rect1 = pygame.Rect(x1 * TILE_SIZE, y1 * TILE_SIZE + MARGIN_TOP, TILE_SIZE, TILE_SIZE)
+                 rect2 = pygame.Rect(x2 * TILE_SIZE, y2 * TILE_SIZE + MARGIN_TOP, TILE_SIZE, TILE_SIZE)
+                 pygame.draw.rect(self.screen, (255, 255, 100), rect1, 3)
+                 pygame.draw.rect(self.screen, (255, 255, 100), rect2, 3)
 
         pygame.display.flip()
 
@@ -261,23 +254,32 @@ class Game:
         return False
 
     def draw_gem(self, px, py, gem_type, highlight=False):
-        center_x = px + TILE_SIZE // 2
-        center_y = py + MARGIN_TOP + TILE_SIZE // 2
-        radius = TILE_SIZE // 2 - 4
-        
-        color = GEM_COLORS[gem_type]
         if highlight:
-            color = (min(color[0]+50, 255), min(color[1]+50, 255), min(color[2]+50, 255))
-        
-        pygame.draw.circle(self.screen, color, (center_x, center_y), radius)
-        # Shine
-        pygame.draw.circle(self.screen, (255, 255, 255), (center_x - radius//3, center_y - radius//3), radius//4)
+            # Scale up or brighten?
+            # Let's draw a white glow behind
+            center_x = px + TILE_SIZE // 2
+            center_y = py + MARGIN_TOP + TILE_SIZE // 2
+            pygame.draw.circle(self.screen, (255, 255, 255), (center_x, center_y), TILE_SIZE // 2)
+            
+        # Use assets
+        if 0 <= gem_type < len(assets.GEM_IMAGES):
+            self.screen.blit(assets.GEM_IMAGES[gem_type], (px, py + MARGIN_TOP))
+        else:
+            # Fallback
+            center_x = px + TILE_SIZE // 2
+            center_y = py + MARGIN_TOP + TILE_SIZE // 2
+            pygame.draw.circle(self.screen, (100, 100, 100), (center_x, center_y), TILE_SIZE // 2 - 4)
 
     # --- Logic Implementation ---
 
     def update_logic(self):
         # Called from update() with access to self
         current_time = pygame.time.get_ticks()
+        
+        # Hint Logic
+        if self.state == STATE_IDLE and not self.hint_move:
+            if current_time - self.last_input_time > 5000: # 5 seconds
+                self.hint_move = self.board.get_hint()
         
         if self.state == STATE_SWAP_ANIM:
             if current_time - self.anim_start_time >= ANIM_SWAP_DURATION:
@@ -286,9 +288,14 @@ class Game:
                 self.state = STATE_CHECK_MATCH
         
         elif self.state == STATE_CHECK_MATCH:
-            matches = self.board.find_matches()
-            if matches:
-                self.matched_gems = matches
+            match_groups = self.board.find_matches()
+            if match_groups:
+                self.match_groups = match_groups
+                # Flatten for animation
+                self.matched_gems = []
+                for group in match_groups:
+                    self.matched_gems.extend(group)
+                    
                 self.state = STATE_MATCH_ANIM
                 self.anim_start_time = current_time
                 self.combo_multiplier = 1 # Reset combo? No, if this was a swap, start at 1.
@@ -306,15 +313,13 @@ class Game:
         
         elif self.state == STATE_MATCH_ANIM:
             if current_time - self.anim_start_time >= ANIM_MATCH_DURATION:
-                # Remove gems
-                self.board.remove_matches(self.matched_gems, self.combo_multiplier)
+                self.board.remove_matches(self.match_groups, self.combo_multiplier)
                 self.matched_gems = []
+                self.match_groups = []
                 self.combo_multiplier += 1
                 
-                # Setup Gravity
                 moves, new_gems = self.board.apply_gravity()
                 
-                # Convert moves to falling gems
                 self.falling_gems = []
                 for m in moves:
                     self.falling_gems.append({
@@ -324,80 +329,12 @@ class Game:
                         'gem_type': m['val']
                     })
                 
-                # Add new gems spawning from above
-                for ng in new_gems:
-                     self.falling_gems.append({
-                        'x': ng['x'],
-                        'y': (ng['y_end'] - BOARD_HEIGHT) * TILE_SIZE, # Start above screen? Or just above board.
-                        # Actually let's start them at -1 * TILE_SIZE * (order)
-                        # Simplified: start at -TILE_SIZE
-                        'target_y': ng['y_end'],
-                        'gem_type': ng['val']
-                    })
-                     # Fix Y for new gems to stack properly above
-                     # This is a bit complex to do perfectly without more tracking.
-                     # Let's just spawn them at -TILE_SIZE for now, they will overlap if multiple in same col.
-                     # Better: spawn at (ng['y_end'] - BOARD_HEIGHT) * TILE_SIZE might be too high.
-                     # Let's spawn at -1 * TILE_SIZE * (dist from top).
-                     # Actually, `apply_gravity` returns `new_gems` with `y_end`.
-                     # The number of empty slots in that column determines height.
-                     pass 
-
-                # Adjust spawn Y for new gems to prevent overlap
-                cols_spawn_count = [0] * BOARD_WIDTH
-                for ng in new_gems:
-                    cols_spawn_count[ng['x']] += 1
-                
-                # We need to assign start Y based on index
-                # Let's re-process new_gems
-                # We need to know which ones are "higher".
-                # The board logic fills from bottom up in `refill_board_instant` logic?
-                # No, `fill top` loop fills `0` to `empty_slots`.
-                # So y=0 is top.
-                # `y` in new_gems is the grid index.
-                # Smaller y = higher up.
-                # So if we have new gems at y=0 and y=1.
-                # y=1 should spawn at -1 * TILE_SIZE.
-                # y=0 should spawn at -2 * TILE_SIZE.
-                
-                # Sort new_gems by y descending (bottom first)? No, we want to calculate start Y.
-                
-                self.falling_gems = []
-                # Re-add moves
-                for m in moves:
-                    self.falling_gems.append({
-                        'x': m['x'],
-                        'y': m['y_start'] * TILE_SIZE,
-                        'target_y': m['y_end'],
-                        'gem_type': m['val']
-                    })
-                
-                # Add new gems
-                for ng in new_gems:
-                     # Calculate how many new gems are BELOW this one in the same column?
-                     # Actually, just use (ng['y_end'] + 1) * -TILE_SIZE?
-                     # If y_end is 0 (top), start at -64.
-                     # If y_end is 1, start at -64? No, y=1 is below y=0.
-                     # New gems fill 0..N.
-                     # So y=0 is the highest new gem.
-                     # y=N is the lowest new gem.
-                     # Wait, gravity fills 0..empty_slots.
-                     # So if we have 3 empty slots, they are at 0, 1, 2.
-                     # 2 is the bottom-most new gem.
-                     # 0 is the top-most.
-                     # We want 2 to be at -64.
-                     # 1 to be at -128.
-                     # 0 to be at -192.
-                     # Formula: start_y = (ng['y_end'] - (max_new_y_in_col + 1)) * TILE_SIZE
-                     pass
-
                 col_max_y = {}
                 for ng in new_gems:
                     col_max_y[ng['x']] = max(col_max_y.get(ng['x'], -1), ng['y_end'])
                 
                 for ng in new_gems:
                      max_y = col_max_y[ng['x']]
-                     # relative_index = max_y - ng['y_end'] (0 for bottom-most, 1 for next...)
                      dist_up = (max_y - ng['y_end']) + 1
                      start_y = -dist_up * TILE_SIZE
                      
@@ -422,9 +359,13 @@ class Game:
             
             if finished:
                 # Check for matches again
-                matches = self.board.find_matches()
-                if matches:
-                    self.matched_gems = matches
+                match_groups = self.board.find_matches()
+                if match_groups:
+                    self.match_groups = match_groups
+                    self.matched_gems = []
+                    for group in match_groups:
+                        self.matched_gems.extend(group)
+                        
                     self.state = STATE_MATCH_ANIM
                     self.anim_start_time = current_time
                 else:
@@ -437,20 +378,14 @@ class Game:
 
     # Overwriting update
     def update(self, dt):
+        if self.state == STATE_PAUSED:
+            return
+            
         if self.state == STATE_SWAP_ANIM and self.anim_gems:
-             # Just waiting for time
              pass
              
         self.update_logic()
 
 if __name__ == "__main__":
     game = Game()
-    # Patch start_swap_animation to save coords
-    orig_start_swap = game.start_swap_animation
-    def patched_start_swap(pos1, pos2):
-        game.swap_src = pos1
-        game.swap_tgt = pos2
-        orig_start_swap(pos1, pos2)
-    game.start_swap_animation = patched_start_swap
-    
     game.run()
