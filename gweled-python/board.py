@@ -19,11 +19,12 @@ class Board:
         
         # Remove initial matches without scoring
         while True:
-            matches = self.find_matches()
-            if not matches:
+            match_groups = self.find_matches()
+            if not match_groups:
                 break
-            for (x, y) in matches:
-                self.grid[x][y] = -1
+            for group in match_groups:
+                for (x, y) in group:
+                    self.grid[x][y] = -1
             self.refill_board_instant()
         
         self.score = 0
@@ -49,66 +50,85 @@ class Board:
         return (abs(x1 - x2) + abs(y1 - y2)) == 1
 
     def find_matches(self):
-        matches = set()
+        match_groups = []
         
         # Horizontal matches
         for y in range(BOARD_HEIGHT):
-            for x in range(BOARD_WIDTH - 2):
+            x = 0
+            while x < BOARD_WIDTH - 2:
                 gem_type = self.grid[x][y]
                 if gem_type == -1:
+                    x += 1
                     continue
-                if (self.grid[x+1][y] == gem_type and 
-                    self.grid[x+2][y] == gem_type):
-                    matches.add((x, y))
-                    matches.add((x+1, y))
-                    matches.add((x+2, y))
-                    # Check for more than 3
-                    k = x + 3
-                    while k < BOARD_WIDTH and self.grid[k][y] == gem_type:
-                        matches.add((k, y))
-                        k += 1
+                
+                length = 1
+                while x + length < BOARD_WIDTH and self.grid[x + length][y] == gem_type:
+                    length += 1
+                
+                if length >= 3:
+                    match_group = []
+                    for k in range(length):
+                        match_group.append((x + k, y))
+                    match_groups.append(match_group)
+                    x += length
+                else:
+                    x += 1
 
         # Vertical matches
         for x in range(BOARD_WIDTH):
-            for y in range(BOARD_HEIGHT - 2):
+            y = 0
+            while y < BOARD_HEIGHT - 2:
                 gem_type = self.grid[x][y]
                 if gem_type == -1:
+                    y += 1
                     continue
-                if (self.grid[x][y+1] == gem_type and 
-                    self.grid[x][y+2] == gem_type):
-                    matches.add((x, y))
-                    matches.add((x, y+1))
-                    matches.add((x, y+2))
-                    # Check for more than 3
-                    k = y + 3
-                    while k < BOARD_HEIGHT and self.grid[x][k] == gem_type:
-                        matches.add((x, k))
-                        k += 1
+                
+                length = 1
+                while y + length < BOARD_HEIGHT and self.grid[x][y + length] == gem_type:
+                    length += 1
+                
+                if length >= 3:
+                    match_group = []
+                    for k in range(length):
+                        match_group.append((x, y + k))
+                    match_groups.append(match_group)
+                    y += length
+                else:
+                    y += 1
         
-        return list(matches)
+        return match_groups
 
-    def remove_matches(self, matches, combo_multiplier=1):
-        if not matches:
+    def remove_matches(self, match_groups, combo_multiplier=1):
+        if not match_groups:
             return 0
             
-        # Group matches to determine length (simplified: just count total gems for now, 
-        # or better: connected components. For faithful scoring we need connected components)
-        # But for now, we'll use a simplified scoring: 10 points per gem in match + bonus
+        gems_to_remove = set()
         
-        # Better scoring:
-        # Each set of 3 = 10 pts
-        # Each extra gem = +10 pts
-        # We need to separate distinct matches to score correctly? 
-        # The set `matches` merges crossing matches.
-        # Let's just do: score = len(matches) * 10 * combo_multiplier
+        for group in match_groups:
+            for gem in group:
+                gems_to_remove.add(gem)
         
-        score_increment = len(matches) * 10 * combo_multiplier
+        final_score = len(gems_to_remove) * 10 * combo_multiplier
+        self.score += final_score
         
-        for (x, y) in matches:
+        for (x, y) in gems_to_remove:
             self.grid[x][y] = -1
-        
-        self.score += score_increment
-        return score_increment
+            
+        return final_score
+
+    def get_hint(self):
+        # Returns (x1, y1, x2, y2) of a valid move, or None
+        # Check horizontal swaps
+        for y in range(BOARD_HEIGHT):
+            for x in range(BOARD_WIDTH - 1):
+                if self.is_valid_move(x, y, x+1, y):
+                    return (x, y, x+1, y)
+        # Check vertical swaps
+        for x in range(BOARD_WIDTH):
+            for y in range(BOARD_HEIGHT - 1):
+                if self.is_valid_move(x, y, x, y+1):
+                    return (x, y, x, y+1)
+        return None
 
     def refill_board_instant(self):
         # Gravity
